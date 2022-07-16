@@ -1,6 +1,7 @@
 import re
 import copy
 from pymystem3 import Mystem
+from gensim.models import TfidfModel
 from gensim.corpora import Dictionary
 from gensim.matutils import corpus2csc
 import time
@@ -30,13 +31,13 @@ def tokens2vectors(tokens: [str], dictionary: Dictionary, max_dict_size: int):
     return [corpus2csc([x], num_terms=max_dict_size) for x in corpus]
 
 
-class QueriesVectorsBoW:
+class TextsVectorsBoW:
     """"""
     def __init__(self, max_dict_size: int):
         self.dictionary = None
         self.max_dict_size = max_dict_size
 
-    def queries2vectors(self, tokens: []):
+    def tokens2corpus(self, tokens: []):
         """queries2vectors new_queries tuple: (text, query_id)
         return new vectors with query ids for sending in searcher"""
         # query_ids, texts = zip(*new_queries)
@@ -50,36 +51,51 @@ class QueriesVectorsBoW:
             gensim_dict_.add_documents(tokens)
             if len(gensim_dict_) <= self.max_dict_size:
                 self.dictionary = gensim_dict_
+        return [self.dictionary.doc2bow(lm_q) for lm_q in tokens]
 
-        return tokens2vectors(tokens, self.dictionary, self.max_dict_size)
+    def tokens2vectors(self, tokens: []):
+        """"""
+        corpus = self.tokens2corpus(tokens)
+        return [corpus2csc([x], num_terms=self.max_dict_size) for x in corpus]
 
     def __call__(self, new_queries):
-        return self.queries2vectors(new_queries)
+        return self.tokens2vectors(new_queries)
 
 
-class QueriesVectorsTfIdf:
+class TextsVectorsTfIdf(TextsVectorsBoW):
     """"""
     def __init__(self, max_dict_size: int):
-        self.dictionary = None
-        self.max_dict_size = max_dict_size
+        super().__init__(max_dict_size)
+        self.tfidf_model = None
 
-    def queries2vectors(self, tokens: []):
-        """queries2vectors new_queries tuple: (text, query_id)
-        return new vectors with query ids for sending in searcher"""
-        # query_ids, texts = zip(*new_queries)
+    def model_fill(self, tokens: []):
+        assert self.tfidf_model is None, "the model is already filled"
+        corpus = super().tokens2corpus(tokens)
+        self.tfidf_model = TfidfModel(corpus)
 
-        if self.dictionary is None:
-            gensim_dict_ = Dictionary(tokens)
-            assert len(gensim_dict_) <= self.max_dict_size, "len(gensim_dict) must be less then max_dict_size"
-            self.dictionary = Dictionary(tokens)
-        else:
-            gensim_dict_ = copy.deepcopy(self.dictionary)
-            gensim_dict_.add_documents(tokens)
-            if len(gensim_dict_) <= self.max_dict_size:
-                self.dictionary = gensim_dict_
+    def texts2vectors(self, tokens: []):
+        """"""
+        vectors = super().tokens2corpus(tokens)
+        return self.tfidf_model[vectors]
 
-        return tokens2vectors(tokens, self.dictionary, self.max_dict_size)
 
-    def __call__(self, new_queries):
-        return self.queries2vectors(new_queries)
+if __name__ == "__main__":
+    c2 = TextsVectorsTfIdf(100)
+    tokens = [["мама", "мыла", "раму"], ["мама", "мыла", "раму", "деревянную"],
+              ["мама", "ноги", "раму"]]
+
+    c2.model_fill(tokens)
+    for i in c2.dictionary:
+        print(i, c2.dictionary[i])
+
+    print(c2.tfidf_model)
+    tokens2 = ["мама", "мыла", "раму", "деревянную"]
+    d2 = c2.texts2vectors([tokens2])
+    print(len(c2.dictionary))
+    print(d2)
+    for i in c2.dictionary:
+        print(i, c2.dictionary[i])
+
+    print("c2.tfidf_model:", c2.tfidf_model)
+    print([v for v in d2])
 
