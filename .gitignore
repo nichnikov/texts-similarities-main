@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+.idea/
+texts-similarities-shard/.idea/
+texts-similarities-shard/.idea/
+arm-similarities-dispatcher/__pycache__/
+arm-similarities-shard/__pycache__/
+./docker-compose.yml
