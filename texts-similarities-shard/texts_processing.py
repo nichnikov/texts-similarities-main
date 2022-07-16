@@ -51,8 +51,8 @@ class TextsVectorsBoW:
         corpus = self.tokens2corpus(tokens)
         return [corpus2csc([x], num_terms=self.max_dict_size) for x in corpus]
 
-    def __call__(self, new_queries):
-        return self.tokens2vectors(new_queries)
+    def __call__(self, new_tokens):
+        return self.tokens2vectors(new_tokens)
 
 
 class TextsVectorsTfIdf(TextsVectorsBoW):
@@ -67,11 +67,13 @@ class TextsVectorsTfIdf(TextsVectorsBoW):
         corpus = super().tokens2corpus(tokens)
         self.tfidf_model = TfidfModel(corpus)
 
-    def texts2vectors(self, tokens: []):
+    def tokens2vectors(self, tokens: []):
         """"""
         vectors = super().tokens2corpus(tokens)
         return self.tfidf_model[vectors]
 
+    def __call__(self, new_tokens):
+        return self.tokens2vectors(new_tokens)
 
 if __name__ == "__main__":
     c2 = TextsVectorsTfIdf(100)
