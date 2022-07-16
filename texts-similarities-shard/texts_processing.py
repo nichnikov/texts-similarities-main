@@ -62,6 +62,7 @@ class TextsVectorsTfIdf(TextsVectorsBoW):
         self.tfidf_model = None
 
     def model_fill(self, tokens: []):
+        """"""
         assert self.tfidf_model is None, "the model is already filled"
         corpus = super().tokens2corpus(tokens)
         self.tfidf_model = TfidfModel(corpus)
@@ -91,4 +92,3 @@ if __name__ == "__main__":
 
     print("c2.tfidf_model:", c2.tfidf_model)
     print([v for v in d2])
-
