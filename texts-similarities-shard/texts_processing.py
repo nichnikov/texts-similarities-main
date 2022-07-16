@@ -25,12 +25,6 @@ class TextsTokenizer:
         return self.texts2tokens(texts)
 
 
-def tokens2vectors(tokens: [str], dictionary: Dictionary, max_dict_size: int):
-    """"""
-    corpus = [dictionary.doc2bow(lm_q) for lm_q in tokens]
-    return [corpus2csc([x], num_terms=max_dict_size) for x in corpus]
-
-
 class TextsVectorsBoW:
     """"""
     def __init__(self, max_dict_size: int):
@@ -40,7 +34,6 @@ class TextsVectorsBoW:
     def tokens2corpus(self, tokens: []):
         """queries2vectors new_queries tuple: (text, query_id)
         return new vectors with query ids for sending in searcher"""
-        # query_ids, texts = zip(*new_queries)
 
         if self.dictionary is None:
             gensim_dict_ = Dictionary(tokens)
