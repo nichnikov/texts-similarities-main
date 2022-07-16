@@ -54,7 +54,27 @@ class TextsVectorsBoW:
     def __call__(self, new_tokens):
         return self.tokens2vectors(new_tokens)
 
+class TextsVectorsTfIdf(TextsVectorsBoW):
+    """"""
+    def __init__(self, max_dict_size):
+        super().__init__(max_dict_size)
+        self.tfidf_model = None
 
+    def model_fill(self, tokens: []):
+        """"""
+        assert self.tfidf_model is None, "the model is already filled"
+        corpus = super().tokens2corpus(tokens)
+        self.tfidf_model = TfidfModel(corpus)
+
+    def tokens2vectors(self, tokens: []):
+        """"""
+        vectors = super().tokens2corpus(tokens)
+        return [corpus2csc([x], num_terms=self.max_dict_size) for x in self.tfidf_model[vectors]]
+
+    def __call__(self, new_tokens):
+        return self.tokens2vectors(new_tokens)
+
+"""
 class TextsVectorsTfIdf(TextsVectorsBoW):
     """"""
     def __init__(self, max_dict_size: int):
@@ -73,10 +93,10 @@ class TextsVectorsTfIdf(TextsVectorsBoW):
         return self.tfidf_model[vectors]
 
     def __call__(self, new_tokens):
-        return self.tokens2vectors(new_tokens)
+        return self.tokens2vectors(new_tokens)"""
 
 if __name__ == "__main__":
-    c2 = TextsVectorsTfIdf(100)
+    c2 = TextsVectorsTfIdf(10)
     tokens = [["мама", "мыла", "раму"], ["мама", "мыла", "раму", "деревянную"],
               ["мама", "ноги", "раму"]]
 
@@ -86,7 +106,7 @@ if __name__ == "__main__":
 
     print(c2.tfidf_model)
     tokens2 = ["мама", "мыла", "раму", "деревянную"]
-    d2 = c2.texts2vectors([tokens2])
+    d2 = c2.tokens2vectors([tokens2])
     print(len(c2.dictionary))
     print(d2)
     for i in c2.dictionary:
