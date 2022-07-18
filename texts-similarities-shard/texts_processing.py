@@ -54,6 +54,7 @@ class TextsVectorsBoW:
     def __call__(self, new_tokens):
         return self.tokens2vectors(new_tokens)
 
+
 class TextsVectorsTfIdf(TextsVectorsBoW):
     """"""
     def __init__(self, max_dict_size):
@@ -74,26 +75,6 @@ class TextsVectorsTfIdf(TextsVectorsBoW):
     def __call__(self, new_tokens):
         return self.tokens2vectors(new_tokens)
 
-"""
-class TextsVectorsTfIdf(TextsVectorsBoW):
-    """"""
-    def __init__(self, max_dict_size: int):
-        super().__init__(max_dict_size)
-        self.tfidf_model = None
-
-    def model_fill(self, tokens: []):
-        """"""
-        assert self.tfidf_model is None, "the model is already filled"
-        corpus = super().tokens2corpus(tokens)
-        self.tfidf_model = TfidfModel(corpus)
-
-    def tokens2vectors(self, tokens: []):
-        """"""
-        vectors = super().tokens2corpus(tokens)
-        return self.tfidf_model[vectors]
-
-    def __call__(self, new_tokens):
-        return self.tokens2vectors(new_tokens)"""
 
 if __name__ == "__main__":
     c2 = TextsVectorsTfIdf(10)
