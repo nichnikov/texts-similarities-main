@@ -4,7 +4,6 @@ from pymystem3 import Mystem
 from gensim.models import TfidfModel
 from gensim.corpora import Dictionary
 from gensim.matutils import corpus2csc
-import time
 
 
 class TextsTokenizer:
@@ -14,11 +13,9 @@ class TextsTokenizer:
 
     def texts2tokens(self, texts: [str]) -> [str]:
         """Lemmatization for texts in list. It returns list with lemmatized texts."""
-        t = time.time()
         text_ = "\n".join(texts)
         text_ = re.sub(r"[^\w\n\s]", " ", text_)
         lm_texts = "".join(self.m.lemmatize(text_))
-        print("texts lemmatization time:", time.time() - t)
         return [lm_q.split() for lm_q in lm_texts.split("\n")][:-1]
 
     def __call__(self, texts: [str]):
