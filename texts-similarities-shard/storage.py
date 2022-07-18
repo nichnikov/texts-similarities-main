@@ -1,37 +1,36 @@
-import pandas as pd
 from scipy.sparse import hstack, vstack
 
 
-class QueriesMatrix:
+class IdsMatrix:
     """"""
     def __init__(self):
         self.ids = []
-        self.queries = []
         self.matrix = None
 
-    def add(self, queries: [()]):
-        """tuples must be like (query_id, query_vector)"""
-        if self.queries is None:
-            self.queries = queries
-            self.matrix = hstack([v for i, v in queries]).T
-            self.ids = [i for i, v in self.queries]
+    def add(self, ids_vectors: [()]):
+        """tuples must be like (text_id, text_vector)"""
+        assert ids_vectors != [], "tuples must have data"
+        ids, vectors = zip(*ids_vectors)
+        self.ids += ids
+        if self.matrix is None:
+            self.matrix = hstack(vectors).T
         else:
-            self.queries += queries
-            self.matrix = vstack((self.matrix, hstack([v for i, v in queries]).T))
-            self.ids = [i for i, v in self.queries]
+            self.matrix = vstack((self.matrix, hstack(vectors).T))
 
-    def delete(self, queries_ids: []):
-        """tuples must be like (query_id, query_vector)"""
-        self.queries = [(i, v) for i, v in self.queries if i not in queries_ids]
-        self.ids = [i for i, v in self.queries]
-        if self.queries:
-            self.matrix = hstack([v for i, v in self.queries]).T
+    def delete(self, delete_ids: []):
+        """tuples must be like (text_id, text_vector)"""
+        ids_vectors = [(i, v) for i, v in zip(self.ids, self.matrix) if i not in delete_ids]
+        if ids_vectors:
+            self.ids, vectors = zip(*ids_vectors)
+            self.matrix = vstack(vectors)
         else:
-            self.queries = []
             self.matrix = None
 
 
-class QueriesStorage:
+
+
+'''
+class TextsStorage:
     """"""
     def __init__(self):
         self.queries = pd.DataFrame({}, columns=["queryId", "answerId", "moduleId", "cluster", "pubIds", "tokens"])
@@ -59,3 +58,4 @@ class QueriesStorage:
             return self.queries[self.queries["queryId"].isin(item_ids)]
         else:
             return self.queries[self.queries["answerId"].isin(item_ids)]
+'''

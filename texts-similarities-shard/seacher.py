@@ -4,7 +4,7 @@ from collections import namedtuple
 from itertools import chain, groupby
 from scipy.sparse import hstack, vstack
 from sklearn.metrics.pairwise import cosine_similarity
-from storage import QueriesMatrix, QueriesStorage
+from storage import TextsMatrix, TextsStorage
 
 # how to get certain rows from sparse matrix:
 # https://cmdlinetips.com/2019/07/how-to-slice-rows-and-columns-of-sparse-matrix-in-python/
@@ -16,7 +16,6 @@ logger.setLevel(logging.INFO)
 
 class MainSearcher:
     """"""
-
     def __init__(self):
         self.ids = []
         self.matrix = None
@@ -50,9 +49,10 @@ class MainSearcher:
 
 
 class Main:
+    """"""
     def __init__(self):
-        self.queries_matrix_list = [QueriesMatrix()]
-        self.queries_storage_list = [QueriesStorage()]
+        self.queries_matrix_list = [TextsMatrix()]
+        self.queries_storage_list = [TextsStorage()]
         self.main_searcher = MainSearcher()
         self.max_size = 20000
 
@@ -60,8 +60,8 @@ class Main:
         """"""
         self.queries_matrix_list.clear()
         self.queries_storage_list.clear()
-        self.queries_matrix_list = [QueriesMatrix()]
-        self.queries_storage_list = [QueriesStorage()]
+        self.queries_matrix_list = [TextsMatrix()]
+        self.queries_storage_list = [TextsStorage()]
         self.main_searcher.ids = []
         self.main_searcher.matrix = None
 
@@ -75,8 +75,8 @@ class Main:
                 flag = False
         if flag:
             """adding new queries_matrix"""
-            q_m = QueriesMatrix()
-            q_s = QueriesStorage()
+            q_m = TextsMatrix()
+            q_s = TextsStorage()
             q_m.add(queries_vectors)
             q_s.add(pd.DataFrame(data, columns=["queryId", "answerId", "moduleId", "cluster", "pubIds", "tokens"]))
             self.queries_matrix_list.append(q_m)

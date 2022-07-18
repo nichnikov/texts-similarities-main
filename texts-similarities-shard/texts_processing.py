@@ -8,6 +8,7 @@ from gensim.matutils import corpus2csc
 
 class TextsTokenizer:
     """Tokenizer"""
+
     def __init__(self):
         self.m = Mystem()
 
@@ -24,6 +25,7 @@ class TextsTokenizer:
 
 class TextsVectorsBoW:
     """"""
+
     def __init__(self, max_dict_size: int):
         self.dictionary = None
         self.max_dict_size = max_dict_size
@@ -34,6 +36,7 @@ class TextsVectorsBoW:
 
         if self.dictionary is None:
             gensim_dict_ = Dictionary(tokens)
+            print(len(gensim_dict_))
             assert len(gensim_dict_) <= self.max_dict_size, "len(gensim_dict) must be less then max_dict_size"
             self.dictionary = Dictionary(tokens)
         else:
@@ -54,6 +57,7 @@ class TextsVectorsBoW:
 
 class TextsVectorsTfIdf(TextsVectorsBoW):
     """"""
+
     def __init__(self, max_dict_size):
         super().__init__(max_dict_size)
         self.tfidf_model = None
