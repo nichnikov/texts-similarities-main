@@ -4,7 +4,7 @@ from collections import namedtuple
 from itertools import chain, groupby
 from scipy.sparse import hstack, vstack
 from sklearn.metrics.pairwise import cosine_similarity
-from storage import TextsMatrix, TextsStorage
+from storage import IdsMatrix
 
 # how to get certain rows from sparse matrix:
 # https://cmdlinetips.com/2019/07/how-to-slice-rows-and-columns-of-sparse-matrix-in-python/

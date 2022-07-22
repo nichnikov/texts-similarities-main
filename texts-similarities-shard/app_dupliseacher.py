@@ -1,9 +1,19 @@
 from flask import Flask, jsonify, request
 from flask_restplus import Api, Resource, fields
-from texts_processing import QueriesVectors
-from seacher import Main
+from storage import Worker
+from uuid import uuid4
+from hashlib import md5
 from waitress import serve
 import logging
+
+
+def data_prepare(json_data):
+    """преобразует входящие словари в список кортежей"""
+    queries_in = []
+    for d in json_data["data"]:
+        queries_in += [(d["locale"], d["moduleId"], str(uuid4()),
+                        d["id"], d["moduleId"], tx, d["pubIds"]) for tx in d["clusters"]]
+    return queries_in
 
 
 logger = logging.getLogger("app_duplisearcher")
@@ -26,10 +36,7 @@ input_data = name_space.model("Input JSONs",
                                "operation": fields.String(description="add/update/delete/search/del_all",
                                                           required=True)})
 
-main = Main()
-"""max size of queries_matrix"""
-
-vectorizer = QueriesVectors(33000)
+main = Worker(50000, 33000)
 
 
 @name_space.route('/')
@@ -40,41 +47,44 @@ class CollectionHandling(Resource):
     def post(self):
         """POST method on input JSON file with scores, operation type and lists of fast answers."""
         json_data = request.json
+        queries = data_prepare(json_data["data"])
 
         if json_data["data"]:
-            q_i, a_i, m_i, cls, p_i, tkns = zip(*json_data["data"])
+            queries = data_prepare(json_data["data"])
+            lc, md, q_i, a_i, m_i, txs, p_ids = zip(*queries)
+            data = json_data["data"]
             if json_data["operation"] == "add":
-                main.add(list(zip(q_i, vectorizer(tkns))), json_data["data"])
-                logger.info("quantity:" + str(main.main_searcher.matrix.shape[0]))
-                return jsonify({"quantity": main.main_searcher.matrix.shape[0]})
+                main.add(data)
+                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list]))
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
 
             elif json_data["operation"] == "delete":
-                main.answers_delete(list(set(a_i)))
-                logger.info("quantity:" + str(main.main_searcher.matrix.shape[0]))
-                return jsonify({"quantity": main.main_searcher.matrix.shape[0]})
+                q_i, a_i, m_i, txs, p_ids = zip(*data)
+                main.delete(list(set(q_i)))
+                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list]))
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
 
             elif json_data["operation"] == "update":
-                main.update(a_i, list(zip(q_i, vectorizer(tkns))), json_data["data"])
-                logger.info("quantity:" + str(main.main_searcher.matrix.shape[0]))
-                return jsonify({"quantity": main.main_searcher.matrix.shape[0]})
+                main.update(data)
+                logger.info("data were updated")
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
 
             elif json_data["operation"] == "search":
                 try:
                     if "score" in json_data:
-                        search_results = main.search(list(zip(q_i, vectorizer(tkns))), json_data["score"])
+                        search_results = main.search(data, json_data["score"])
                     else:
-                        search_results = main.search(list(zip(q_i, vectorizer(tkns))))
+                        search_results = main.search(data)
                     return jsonify(search_results)
                 except:
                     return jsonify([])
-
         else:
             if json_data["operation"] == "delete_all":
                 main.delete_all()
-                logger.info("matrix:" + str(main.main_searcher.matrix))
-                return jsonify({"matrix": main.main_searcher.matrix})
+                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list]))
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
 
 
 if __name__ == "__main__":
-    serve(app, host="0.0.0.0", port=8080)
-    # app.run(host='0.0.0.0', port=8080)
+    # serve(app, host="0.0.0.0", port=8080)
+    app.run(host='0.0.0.0', port=8080)

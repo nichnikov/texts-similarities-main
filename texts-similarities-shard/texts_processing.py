@@ -36,7 +36,7 @@ class TextsVectorsBoW:
 
         if self.dictionary is None:
             gensim_dict_ = Dictionary(tokens)
-            print(len(gensim_dict_))
+            print("len gensim_dict:", len(gensim_dict_))
             assert len(gensim_dict_) <= self.max_dict_size, "len(gensim_dict) must be less then max_dict_size"
             self.dictionary = Dictionary(tokens)
         else:
@@ -76,7 +76,7 @@ class TextsVectorsTfIdf(TextsVectorsBoW):
     def __call__(self, new_tokens):
         return self.tokens2vectors(new_tokens)
 
-
+'''
 if __name__ == "__main__":
     c2 = TextsVectorsTfIdf(10)
     tokens = [["мама", "мыла", "раму"], ["мама", "мыла", "раму", "деревянную"],
@@ -96,3 +96,4 @@ if __name__ == "__main__":
 
     print("c2.tfidf_model:", c2.tfidf_model)
     print([v for v in d2])
+'''
