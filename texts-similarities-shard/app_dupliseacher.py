@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request
 from flask_restplus import Api, Resource, fields
 from storage import Worker
 from uuid import uuid4
+from itertools import chain, groupby
+from collections import namedtuple
 from hashlib import md5
 from waitress import serve
 import logging
@@ -10,10 +12,68 @@ import logging
 def data_prepare(json_data):
     """преобразует входящие словари в список кортежей"""
     queries_in = []
-    for d in json_data["data"]:
+    for d in json_data:
         queries_in += [(d["locale"], d["moduleId"], str(uuid4()),
                         d["id"], d["moduleId"], tx, d["pubIds"]) for tx in d["clusters"]]
     return queries_in
+
+
+def resulting_report(searched_data, result_tuples, found_dicts_l, locale: str):
+    """"""
+
+    def grouping(similarity_items, searched_queries, searched_answers_moduls, locale: str):
+        """"""
+        return [{"id": k1, "locale": locale, "moduleId": searched_answers_moduls[k1], "clustersWithDuplicate":
+            [{"cluster": searched_queries[k2]["cluster"], "duplicates":
+                [{"cluster": x2.FoundText, "id": x2.FoundAnswerId, "moduleId": x2.FoundModuleId,
+                  "pubId": x2.FoundPubIds} for x2 in v2]}
+             for k2, v2 in
+             groupby(sorted([x1 for x1 in v1], key=lambda c: c.SearchedQueryId), lambda d: d.SearchedQueryId)]}
+                for k1, v1 in
+                groupby(sorted(similarity_items, key=lambda a: a.SearchedAnswerId), lambda b: b.SearchedAnswerId)]
+
+    ResultItem = namedtuple("ResultItem", "SearchedAnswerId, "
+                                          "SearchedText, "
+                                          "SearchedQueryId, "
+                                          "SearchedModuleId, "
+                                          "SearchedPubIds, "
+                                          "FoundAnswerId, "
+                                          "FoundText, "
+                                          "FoundQueryId, "
+                                          "FoundModuleId, "
+                                          "FoundPubIds")
+
+    searched_dict = {q_i: {"answerId": a_i,
+                           "moduleId": m_i,
+                           "cluster": cl,
+                           "pubIds": p_i} for q_i, a_i, m_i, cl, p_i, vcs in searched_data}
+
+    searched_answers_moduls = {a_i: m_i for q_i, a_i, m_i, cl, p_i, vcs in searched_data}
+
+    found_dict = {d["queryId"]: d for d in chain(*found_dicts_l)}
+    similarity_items = [ResultItem(searched_dict[sa_i]["answerId"],
+                                   searched_dict[sa_i]["cluster"],
+                                   sa_i,
+                                   searched_dict[sa_i]["moduleId"],
+                                   searched_dict[sa_i]["pubIds"],
+                                   found_dict[fa_i]["answerId"],
+                                   found_dict[fa_i]["cluster"],
+                                   fa_i,
+                                   found_dict[fa_i]["moduleId"],
+                                   found_dict[fa_i]["pubIds"]) for sa_i, fa_i, sc in result_tuples]
+
+    return grouping(similarity_items, searched_dict, searched_answers_moduls, locale)
+
+
+def result_aggregate(respons):
+    result_tuples_list = []
+    result_dicts_list = []
+    for x in respons:
+        if x:
+            result_tuples_list += x[0]
+            result_dicts_list += x[1]
+    return result_tuples_list, result_dicts_list
+
 
 
 logger = logging.getLogger("app_duplisearcher")
@@ -47,42 +107,39 @@ class CollectionHandling(Resource):
     def post(self):
         """POST method on input JSON file with scores, operation type and lists of fast answers."""
         json_data = request.json
-        queries = data_prepare(json_data["data"])
 
         if json_data["data"]:
             queries = data_prepare(json_data["data"])
-            lc, md, q_i, a_i, m_i, txs, p_ids = zip(*queries)
-            data = json_data["data"]
             if json_data["operation"] == "add":
-                main.add(data)
-                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list]))
-                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
+                main.add(queries)
+                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list.ids_matrix_list]))
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list.ids_matrix_list])})
 
             elif json_data["operation"] == "delete":
-                q_i, a_i, m_i, txs, p_ids = zip(*data)
+                lc, md, q_i, a_i, m_i, txs, p_ids = zip(*queries)
                 main.delete(list(set(q_i)))
-                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list]))
-                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
+                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list.ids_matrix_list]))
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list.ids_matrix_list])})
 
             elif json_data["operation"] == "update":
-                main.update(data)
+                main.update(queries)
                 logger.info("data were updated")
-                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list.ids_matrix_list])})
 
             elif json_data["operation"] == "search":
                 try:
                     if "score" in json_data:
-                        search_results = main.search(data, json_data["score"])
+                        search_results = main.search(queries, json_data["score"])
                     else:
-                        search_results = main.search(data)
+                        search_results = main.search(queries)
                     return jsonify(search_results)
                 except:
                     return jsonify([])
         else:
             if json_data["operation"] == "delete_all":
                 main.delete_all()
-                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list]))
-                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list])})
+                logger.info("quantity:" + str([len(m.ids) for m in main.matrix_list.ids_matrix_list]))
+                return jsonify({"quantity": sum([len(m.ids) for m in main.matrix_list.ids_matrix_list])})
 
 
 if __name__ == "__main__":

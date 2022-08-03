@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import time
 from scipy.sparse import hstack, vstack
 from collections import namedtuple
 from itertools import chain
@@ -33,9 +34,11 @@ def search_func(searched_data: {}):
         return []
     else:
         try:
+            t = time.time()
             matrix_scores = cosine_similarity(searched_matrix, matrix, dense_output=False)
             search_results = [[(v_id, matrix_ids[mrx_i], sc) for mrx_i, sc in zip(scores.indices, scores.data)
                                if sc >= score] for v_id, scores in zip(vectors_ids, matrix_scores)]
+            print("cosine_similarity and search_results time:", time.time() - t)
             logger.info('searching successfully completed')
             return [x for x in chain(*search_results) if x]
         except Exception as e:
@@ -80,19 +83,24 @@ class Worker:
     def search(self, searched_data: [()], score=0.99):
         ids_vectors = self.vectors_maker(searched_data)
         searched_df = pd.DataFrame(searched_data, columns=self.columns)
+        t1 = time.time()
         search_results = self.matrix_list.search(ids_vectors, score)
+        print("matrix_list.search time:", time.time() - t1)
         searched_ids, founded_ids, scores = zip(*search_results)
         search_results_df = pd.DataFrame(search_results, columns=["queryId", "founded_ids", "scores"])
+        t2 = time.time()
         found_data_df = self.text_storage.search(founded_ids, by_column="queryId")
+        print("text_storage.search time:", time.time() - t2)
+        t2 = time.time()
         searched_df = pd.merge(searched_df, search_results_df, on="queryId")
         searched_df.rename(columns={"queryId": "searched_queryId", "answerId": "searched_answerId",
                                     "cluster": "searched_cluster"}, inplace=True)
         result_df = pd.merge(searched_df[["searched_queryId", "searched_answerId", "searched_cluster",
                                           "founded_ids", "scores"]],
                              found_data_df, left_on="founded_ids", right_on="queryId")
-        return result_df
-
-
+        print("DataFrame manipulation time:", time.time() - t2)
+        print("search result:", result_df.shape)
+        return result_df.shape
 
 
 class MatricesList:
@@ -136,6 +144,10 @@ class MatricesList:
                          "matrix": mx.matrix,
                          "matrix_ids": mx.ids,
                          "score": min_score} for mx in self.ids_matrix_list]
+        """
+        search_result = []
+        for d in serched_data:
+            search_result.append(search_func(d))"""
         pool = Pool()
         search_result = pool.map(search_func, serched_data)
         pool.close()
